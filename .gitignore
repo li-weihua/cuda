@@ -1,0 +1,11 @@
+# ignore files
+*.o
+*.a
+*.so
+*.dll
+*.cubin
+*~
+*.swp
+
+# ignore dirs
+build/
