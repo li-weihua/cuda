@@ -9,8 +9,8 @@ __global__ void reduce_v1(int *arr, int *odata) {
 
   __shared__ int s[BlockSize];
 
-  int tid = threadIdx.x;
-  int t = threadIdx.x + BlockSize * blockIdx.x;
+  const int tid = threadIdx.x;
+  const int t = threadIdx.x + BlockSize * blockIdx.x;
 
   s[tid] = arr[t];
   __syncthreads();
@@ -34,8 +34,8 @@ __global__ void reduce_v2(int *arr, int *odata) {
 
   __shared__ int s[BlockSize];
 
-  int tid = threadIdx.x;
-  int t = threadIdx.x + BlockSize * blockIdx.x;
+  const int tid = threadIdx.x;
+  const int t = threadIdx.x + BlockSize * blockIdx.x;
 
   s[tid] = arr[t];
   __syncthreads();
@@ -63,8 +63,8 @@ __global__ void reduce_v3(int *arr, int *odata) {
 
   __shared__ int s[BlockSize];
 
-  int tid = threadIdx.x;
-  int t = threadIdx.x + BlockSize * 2 * blockIdx.x;
+  const int tid = threadIdx.x;
+  const int t = threadIdx.x + BlockSize * 2 * blockIdx.x;
 
   s[tid] = arr[t] + arr[t + BlockSize];
   __syncthreads();
@@ -86,13 +86,15 @@ __global__ void reduce_v3(int *arr, int *odata) {
 }
 
 // warp reduce
+// note *volatile* 
+template <int BlockSize>
 __device__ void warpReduce(volatile int* sdata, int tid) {
-  sdata[tid] += sdata[tid + 32];
-  sdata[tid] += sdata[tid + 16];
-  sdata[tid] += sdata[tid + 8];
-  sdata[tid] += sdata[tid + 4];
-  sdata[tid] += sdata[tid + 2];
-  sdata[tid] += sdata[tid + 1];
+  if (BlockSize >= 64) sdata[tid] += sdata[tid + 32];
+  if (BlockSize >= 32) sdata[tid] += sdata[tid + 16];
+  if (BlockSize >= 16) sdata[tid] += sdata[tid +  8];
+  if (BlockSize >=  8) sdata[tid] += sdata[tid +  4];
+  if (BlockSize >=  4) sdata[tid] += sdata[tid +  2];
+  if (BlockSize >=  2) sdata[tid] += sdata[tid +  1];
 }
 
 //
@@ -101,8 +103,8 @@ __global__ void reduce_v4(int *arr, int *odata) {
 
   __shared__ int s[BlockSize];
 
-  int tid = threadIdx.x;
-  int t = threadIdx.x + BlockSize * 2 * blockIdx.x;
+  const int tid = threadIdx.x;
+  const int t = threadIdx.x + BlockSize * 2 * blockIdx.x;
 
   s[tid] = arr[t] + arr[t + BlockSize];
   __syncthreads();
@@ -110,20 +112,13 @@ __global__ void reduce_v4(int *arr, int *odata) {
   for (int i=BlockSize/2; i >= 64; i >>= 1) {
     if (tid < i) {
       s[tid] += s[tid + i];
-    //__syncthreads();
     }
     __syncthreads();
   }
-  /*
-  if (tid < 512) { s[tid] += s[tid + 512]; } __syncthreads();
-  if (tid < 256) { s[tid] += s[tid + 256]; } __syncthreads();
-  if (tid < 128) { s[tid] += s[tid + 128]; } __syncthreads();
-  if (tid < 64)  { s[tid] += s[tid + 64];  } __syncthreads();
-  */
 
   // warp reduce
   if (tid < 32) {
-    warpReduce(s, tid);
+    warpReduce<64>(s, tid);
   }
 
   if (tid == 0) {
@@ -137,23 +132,30 @@ __global__ void reduce_v5(int *arr, int *odata) {
 
   __shared__ int s[BlockSize];
 
-  int tid = threadIdx.x;
-  int t = threadIdx.x + BlockSize * 2 * blockIdx.x;
+  const int tid = threadIdx.x;
+  const int t = threadIdx.x + BlockSize * 2 * blockIdx.x;
 
   s[tid] = arr[t] + arr[t + BlockSize];
   __syncthreads();
 
+  /*
   for (int i=BlockSize/2; i >= 64; i >>= 1) {
     if (tid < i) {
       s[tid] += s[tid + i];
     }
     __syncthreads();
   }
+  */
+
+  // loop unrolling
+  if (tid < 128) { s[tid] += s[tid + 128]; } __syncthreads();
+  if (tid < 64)  { s[tid] += s[tid + 64];  } __syncthreads();
 
   // warp shuffle
   if (tid < 32) {
-    s[tid] += s[tid + 32];
+    //s[tid] += s[tid + 32];
     int v = s[tid];
+    v += s[tid + 32];
     v += __shfl_down_sync(0xffffffff, v, 16);
     v += __shfl_down_sync(0xffffffff, v, 8);
     v += __shfl_down_sync(0xffffffff, v, 4);
@@ -163,6 +165,41 @@ __global__ void reduce_v5(int *arr, int *odata) {
     if (tid == 0) {
       odata[blockIdx.x] = v;
     }
+  }
+}
+
+// 
+template <int BlockSize>
+__global__ void reduce_v6(int *arr, int *odata, int n) {
+
+  __shared__ int s[BlockSize];
+  //extern __shared__ int s[];
+
+  const int tid = threadIdx.x;
+  size_t t = threadIdx.x + BlockSize * 2 * blockIdx.x;
+  const int gridSize = BlockSize * 2 * gridDim.x;
+
+  s[tid] = 0;
+
+  for(int i=0; i<n; ++i) {
+    s[tid] += arr[t] + arr[t+BlockSize]; 
+    t += gridSize; 
+  }
+  __syncthreads();
+
+  for (int i=BlockSize/2; i >= 32; i >>= 1) {
+    if (tid < i) {
+      s[tid] += s[tid + i];
+    }
+    __syncthreads();
+  }
+
+  if (tid == 0) {
+    int sum = 0;
+    for (int i=0; i<32; ++i) {
+      sum += s[i];
+    }
+    odata[blockIdx.x] = sum;
   }
 }
 

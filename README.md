@@ -1,13 +1,13 @@
 # cuda learning notes
 
-## todo
-- [x] multithreading with cuda context
-- [ ] multiprocessing with cuda context
-
-## high performance kernels
+## TODO
+ - [ ] matrix transpose experiment
+ - [ ] warp shuffle tricks
+ - [ ] matrix multiply experiment
+ - [ ] convolution experiment, cuda version of winograd convolution 
 
 ### reduce sum
 
 [reduce_sum](./reduce_sum)
-
+- [ ] experiments and analysis
 
