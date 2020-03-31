@@ -154,8 +154,7 @@ __global__ void reduce_v5(int *arr, int *odata) {
   // warp shuffle
   if (tid < 32) {
     //s[tid] += s[tid + 32];
-    int v = s[tid];
-    v += s[tid + 32];
+    int v = s[tid] + s[tid+32];
     v += __shfl_down_sync(0xffffffff, v, 16);
     v += __shfl_down_sync(0xffffffff, v, 8);
     v += __shfl_down_sync(0xffffffff, v, 4);
