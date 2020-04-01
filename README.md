@@ -8,6 +8,6 @@
 
 ### reduce sum
 
-[reduce_sum](./reduce_sum)
+[reduce sum](./reduceSum)
 - [ ] experiments and analysis
 
