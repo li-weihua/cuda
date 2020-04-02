@@ -10,6 +10,8 @@ cuda learning notes
    :maxdepth: 2
    :caption: Contents:
 
+   reduce_sum
+
 
 
 Indices and tables
