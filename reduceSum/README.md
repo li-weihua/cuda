@@ -29,6 +29,10 @@ kernel v5: 4.855 ms, 823.824 GB/s
 kernel v6: 4.802 ms, 832.903 GB/s
 ```
 
+V100 memory bandwidth 900 GB/s
+
+kernel v6 达到了 92.5% 的吞吐量。
+
 ### key optimization points
 
 - global memory throughput, each block load two blocks of global memory.

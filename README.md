@@ -1,6 +1,8 @@
 # cuda learning notes
 
 ## TODO
+ - [ ] fast float to half on cpu site
+
  - [ ] matrix transpose experiment
  - [ ] warp shuffle tricks
  - [ ] matrix multiply experiment
@@ -9,5 +11,10 @@
 ### reduce sum
 
 [reduce sum](./reduceSum)
-- [ ] experiments and analysis
+
+### tensor core
+
+[simple](./tensorcore/simple)
+
+
 

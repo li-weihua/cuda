@@ -11,5 +11,5 @@ set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}   \
 
 message("nvcc flags:\n ${CMAKE_CUDA_FLAGS}")
 
-add_executable(tensorcore1 matmultiply_16x16.cu common.h)
+add_executable(tensorcore1 matmultiply_16x16x16.cu common.h)
 
