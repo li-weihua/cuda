@@ -6,5 +6,6 @@
 *.cubin
 *~
 *.swp
+a.out
 
 # ignore dirs
